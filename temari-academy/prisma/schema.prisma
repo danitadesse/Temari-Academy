@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("student") // student | admin
+  createdAt    DateTime  @default(now())
+  enrollments  Enrollment[]
+  progress     LessonProgress[]
+  quizResults  QuizResult[]
+  messages     ContactMessage[]
+}
+
+model Course {
+  id          Int         @id @default(autoincrement())
+  slug        String      @unique
+  title       String
+  subtitle    String
+  description String
+  category    String
+  level       String      // beginner | intermediate | advanced
+  priceCents  Int         @default(0)
+  hours       Int         @default(0)
+  published   Boolean     @default(true)
+  quizJson    String      @default("[]")
+  createdAt   DateTime    @default(now())
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  quizResults QuizResult[]
+}
+
+model Lesson {
+  id        Int     @id @default(autoincrement())
+  courseId  Int
+  course    Course  @relation(fields: [courseId], references: [id])
+  idx       Int
+  title     String
+  minutes   Int     @default(10)
+  progress  LessonProgress[]
+}
+
+model Enrollment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  lessonId     Int
+  lesson       Lesson   @relation(fields: [lessonId], references: [id])
+  completedAt  DateTime @default(now())
+
+  @@unique([userId, lessonId])
+}
+
+model QuizResult {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  Int
+  course    Course   @relation(fields: [courseId], references: [id])
+  score     Int
+  total     Int
+  passed    Boolean
+  createdAt DateTime @default(now())
+}
+
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  name      String
+  email     String
+  topic     String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
